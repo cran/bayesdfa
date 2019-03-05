@@ -64,9 +64,10 @@ trend_cor <- function(rotated_modelfit,
   if (!identical(ncol(x), length(y))) stop("DFA trend and y must be same length")
 
   samples <- sample(seq_len(nrow(x)), size = trend_samples)
+
   out <- vapply(seq_len(length(samples)), FUN = function(i) {
     xi <- as.numeric(scale(as.numeric(x[samples[i], ])))
-    m <- rstan::sampling(stanmodels$corr,
+    m <- rstan::sampling(object=stanmodels$corr,
       data = list(x = xi, y = y, N = length(y)),
       iter = stan_iter, chains = stan_chains, warmup = stan_iter / 2, ...
     )

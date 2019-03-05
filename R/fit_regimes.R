@@ -49,7 +49,7 @@ fit_regimes <- function(y,
       pars = c("mu_k", "sigma_k", "log_lik")
     )
 
-    m <- rstan::sampling(stanmodels$regime_1,
+    m <- rstan::sampling(object=stanmodels$regime_1,
       data = stan_data,
       iter = iter,
       chains = chains,
@@ -74,7 +74,7 @@ fit_regimes <- function(y,
       )
     )
 
-    m <- rstan::sampling(stanmodels$hmm_gaussian,
+    m <- rstan::sampling(object=stanmodels$hmm_gaussian,
       data = stan_data,
       iter = iter,
       thin = thin,

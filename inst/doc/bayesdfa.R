@@ -6,6 +6,7 @@ opts_chunk$set(message = FALSE, fig.width = 5.5)
 library(bayesdfa)
 library(ggplot2)
 library(dplyr)
+library(rstan)
 
 ## ----simulate-data-------------------------------------------------------
 set.seed(1)
