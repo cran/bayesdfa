@@ -1,7 +1,7 @@
 Package: bayesdfa
 Type: Package
 Title: Bayesian Dynamic Factor Analysis (DFA) with 'Stan'
-Version: 0.1.3
+Version: 0.1.5
 Authors@R: c(
     person(c("Eric", "J."), "Ward", role = c("aut", "cre"), 
       email = "eric.ward@noaa.gov"),
@@ -29,11 +29,11 @@ LinkingTo: StanHeaders (>= 2.18.1), rstan (>= 2.18.2), BH (>= 1.66.0),
 Suggests: testthat, parallel, knitr, rmarkdown, MARSS
 URL: https://github.com/fate-ewi/bayesdfa
 BugReports: https://github.com/fate-ewi/bayesdfa/issues
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
 VignetteBuilder: knitr
 SystemRequirements: GNU make
 NeedsCompilation: yes
-Packaged: 2019-05-22 13:03:46 UTC; ericward
+Packaged: 2020-09-02 14:31:54 UTC; eric.ward
 Author: Eric J. Ward [aut, cre],
   Sean C. Anderson [aut],
   Luis A. Damiano [aut],
@@ -42,4 +42,4 @@ Author: Eric J. Ward [aut, cre],
   Trustees of Columbia University [cph]
 Maintainer: Eric J. Ward <eric.ward@noaa.gov>
 Repository: CRAN
-Date/Publication: 2019-05-22 13:40:05 UTC
+Date/Publication: 2020-09-02 15:50:03 UTC

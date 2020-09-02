@@ -4,8 +4,15 @@
 \alias{fit_regimes}
 \title{Fit models with differing numbers of regimes to trend data}
 \usage{
-fit_regimes(y, sds = NULL, n_regimes = 2, iter = 2000, thin = 1,
-  chains = 1, ...)
+fit_regimes(
+  y,
+  sds = NULL,
+  n_regimes = 2,
+  iter = 2000,
+  thin = 1,
+  chains = 1,
+  ...
+)
 }
 \arguments{
 \item{y}{Data, time series or trend from fitted DFA model.}
@@ -23,12 +30,12 @@ If passed in, residual variance not estimated. Defaults to \code{NULL}.}
 may result in a label switching problem where the regimes are identified
 with different IDs across chains).}
 
-\item{...}{Other parameters to pass to \code{\link[rstan:sampling]{rstan::sampling()}}.}
+\item{...}{Other parameters to pass to \code{\link[rstan:stanmodel-method-sampling]{rstan::sampling()}}.}
 }
 \description{
 Fit models with differing numbers of regimes to trend data
 }
 \examples{
 data(Nile)
-fit_regimes(log(Nile), iter = 1000, n_regimes = 1)
+fit_regimes(log(Nile), iter = 50, n_regimes = 1)
 }

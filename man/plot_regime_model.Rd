@@ -4,9 +4,14 @@
 \alias{plot_regime_model}
 \title{Plot the state probabilities from \code{\link[=find_regimes]{find_regimes()}}}
 \usage{
-plot_regime_model(model, probs = c(0.05, 0.95), type = c("probability",
-  "means"), regime_prob_threshold = 0.9, plot_prob_indices = NULL,
-  flip_regimes = FALSE)
+plot_regime_model(
+  model,
+  probs = c(0.05, 0.95),
+  type = c("probability", "means"),
+  regime_prob_threshold = 0.9,
+  plot_prob_indices = NULL,
+  flip_regimes = FALSE
+)
 }
 \arguments{
 \item{model}{A model returned by \code{\link[=find_regimes]{find_regimes()}}.}
@@ -34,7 +39,7 @@ between 0 and 1.
 \examples{
 \donttest{
 data(Nile)
-m <- fit_regimes(log(Nile), n_regimes = 2, chains = 1, iter = 800)
+m <- fit_regimes(log(Nile), n_regimes = 2, chains = 1, iter = 50)
 plot_regime_model(m)
 plot_regime_model(m, plot_prob_indices=c(2))
 plot_regime_model(m, type = "means")

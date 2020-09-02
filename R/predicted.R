@@ -10,7 +10,7 @@
 #' set.seed(42)
 #' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
 #' # only 1 chain and 1000 iterations used so example runs quickly:
-#' m <- fit_dfa(y = s$y_sim, iter = 1000, chains = 1)
+#' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1)
 #' pred <- predicted(m)
 #'
 predicted <- function(fitted_model) {
@@ -18,8 +18,13 @@ predicted <- function(fitted_model) {
   x <- rstan::extract(fitted_model$model, "x", permuted=FALSE)
 
   n_chains <- dim(Z)[2]
-  n_ts <- dim(fitted_model$data)[1]
-  n_y <- dim(fitted_model$data)[2]
+  if(fitted_model$shape == "wide") {
+    n_ts <- dim(fitted_model$data)[1]
+    n_y <- dim(fitted_model$data)[2]
+  } else {
+    n_ts = max(fitted_model$data[,"ts"])
+    n_y = max(fitted_model$data[,"time"])
+  }
   n_trends <- dim(Z)[3]/n_ts
   n_mcmc <- dim(x)[1]
 

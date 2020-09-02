@@ -4,9 +4,17 @@
 \alias{find_dfa_trends}
 \title{Find the best number of trends according to LOOIC}
 \usage{
-find_dfa_trends(y = y, kmin = 1, kmax = 5, iter = 2000, thin = 1,
-  compare_normal = FALSE, convergence_threshold = 1.05,
-  variance = c("equal", "unequal"), ...)
+find_dfa_trends(
+  y = y,
+  kmin = 1,
+  kmax = 5,
+  iter = 2000,
+  thin = 1,
+  compare_normal = FALSE,
+  convergence_threshold = 1.05,
+  variance = c("equal", "unequal"),
+  ...
+)
 }
 \arguments{
 \item{y}{A matrix of data to fit. Columns represent time element.}
@@ -40,7 +48,7 @@ set.seed(42)
 s <- sim_dfa(num_trends = 2, num_years = 20, num_ts = 3)
 # only 1 chain and 180 iterations used so example runs quickly:
 m <- find_dfa_trends(
-  y = s$y_sim, iter = 180,
+  y = s$y_sim, iter = 50,
   kmin = 1, kmax = 2, chains = 1, compare_normal = FALSE,
   variance = "equal", convergence_threshold = 1.1,
   control = list(adapt_delta = 0.95, max_treedepth = 20))

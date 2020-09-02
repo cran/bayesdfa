@@ -4,8 +4,12 @@
 \alias{plot_trends}
 \title{Plot the trends from a DFA}
 \usage{
-plot_trends(rotated_modelfit, years = NULL, highlight_outliers = FALSE,
-  threshold = 0.01)
+plot_trends(
+  rotated_modelfit,
+  years = NULL,
+  highlight_outliers = FALSE,
+  threshold = 0.01
+)
 }
 \arguments{
 \item{rotated_modelfit}{Output from \code{\link{rotate_trends}}}
@@ -25,7 +29,7 @@ Plot the trends from a DFA
 \examples{
 set.seed(1)
 s <- sim_dfa(num_trends = 1)
-m <- fit_dfa(y = s$y_sim, num_trends = 1, iter = 500, chains = 1)
+m <- fit_dfa(y = s$y_sim, num_trends = 1, iter = 50, chains = 1)
 r <- rotate_trends(m)
 p <- plot_trends(r)
 print(p)

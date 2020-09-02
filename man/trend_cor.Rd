@@ -4,9 +4,16 @@
 \alias{trend_cor}
 \title{Estimate the correlation between a DFA trend and some other timeseries}
 \usage{
-trend_cor(rotated_modelfit, y, trend = 1,
-  time_window = seq_len(length(y)), trend_samples = 100,
-  stan_iter = 300, stan_chains = 1, ...)
+trend_cor(
+  rotated_modelfit,
+  y,
+  trend = 1,
+  time_window = seq_len(length(y)),
+  trend_samples = 100,
+  stan_iter = 300,
+  stan_chains = 1,
+  ...
+)
 }
 \arguments{
 \item{rotated_modelfit}{Output from \code{\link[=rotate_trends]{rotate_trends()}}.}
@@ -52,7 +59,7 @@ posterior of the correlation.
 \examples{
 set.seed(1)
 s <- sim_dfa(num_trends = 1, num_years = 15)
-m <- fit_dfa(y = s$y_sim, num_trends = 1, iter = 500, chains = 1)
+m <- fit_dfa(y = s$y_sim, num_trends = 1, iter = 50, chains = 1)
 r <- rotate_trends(m)
 n_years <- ncol(r$trends[,1,])
 fake_dat <- rnorm(n_years, 0, 1)

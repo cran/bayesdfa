@@ -4,8 +4,16 @@
 \alias{find_regimes}
 \title{Fit multiple models with differing numbers of regimes to trend data}
 \usage{
-find_regimes(y, sds = NULL, min_regimes = 1, max_regimes = 3,
-  iter = 2000, thin = 1, chains = 1, ...)
+find_regimes(
+  y,
+  sds = NULL,
+  min_regimes = 1,
+  max_regimes = 3,
+  iter = 2000,
+  thin = 1,
+  chains = 1,
+  ...
+)
 }
 \arguments{
 \item{y}{Data, time series or trend from fitted DFA model.}
@@ -25,12 +33,12 @@ passed in, residual variance not estimated.}
 may result in a "label switching" problem where the regimes are identified
 with different IDs across chains).}
 
-\item{...}{Other parameters to pass to \code{\link[rstan:sampling]{rstan::sampling()}}.}
+\item{...}{Other parameters to pass to \code{\link[rstan:stanmodel-method-sampling]{rstan::sampling()}}.}
 }
 \description{
 Fit multiple models with differing numbers of regimes to trend data
 }
 \examples{
 data(Nile)
-find_regimes(log(Nile), iter = 500, chains = 1, max_regimes = 2)
+find_regimes(log(Nile), iter = 50, chains = 1, max_regimes = 2)
 }
