@@ -109,17 +109,17 @@ plot_loadings(r)
 ## ----summarize-nu-------------------------------------------------------------
 summary(rstan::extract(t2$model, "nu")[[1]])
 
-## ---- warning=FALSE, message=FALSE, results='hide'----------------------------
-reg_mod <- fit_regimes(
-  y = r$trends_mean[1, ],
-  sds = (r$trends_upper - r$trends_mean)[1, ] / 1.96,
-  n_regimes = 2,
-  iter = 50, chains = 1
-)
+## ----eval = FALSE, warning=FALSE, message=FALSE, results='hide'---------------
+#  reg_mod <- fit_regimes(
+#    y = r$trends_mean[1, ],
+#    sds = (r$trends_upper - r$trends_mean)[1, ] / 1.96,
+#    n_regimes = 2,
+#    iter = 50, chains = 1
+#  )
 
-## ----plot-regime, fig.align='center', fig.cap="Estimated regimes, from a HMM model applied to the first trend of a 2-trend DFA model with Student-t deviations.\\label{fig:plot-regime}"----
-plot_regime_model(reg_mod)
+## ----plot-regime, eval=FALSE, fig.align='center', fig.cap="Estimated regimes, from a HMM model applied to the first trend of a 2-trend DFA model with Student-t deviations.\\label{fig:plot-regime}"----
+#  plot_regime_model(reg_mod)
 
-## ----plot-regime-flipped, fig.align='center', fig.cap="Estimated regimes (after flipping), from a HMM model applied to the first trend of a 2-trend DFA model with Student-t deviations.\\label{fig:plot-regime-flipped}"----
-plot_regime_model(reg_mod, flip_regimes = TRUE)
+## ----plot-regime-flipped, eval=FALSE, fig.align='center', fig.cap="Estimated regimes (after flipping), from a HMM model applied to the first trend of a 2-trend DFA model with Student-t deviations.\\label{fig:plot-regime-flipped}"----
+#  plot_regime_model(reg_mod, flip_regimes = TRUE)
 
