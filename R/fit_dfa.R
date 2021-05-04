@@ -49,6 +49,22 @@
 #'   trend, and (4) the value of the covariate
 #' @param z_bound Optional hard constraints for estimated factor loadings -- really only applies to model with 1 trend. Passed in as a 2-element vector representing the lower and upper bound, e.g. (0, 100) to constrain positive
 #' @param z_model Optional argument allowing for elements of Z to be constrained to be proportions (each time series modeled as a mixture of trends). Arguments can be "dfa" (default) or "proportion"
+#' @param trend_model Optional argument to change the model of the underlying latent trend. By default this is set to 'rw', where the trend
+#' is modeled as a random walk - as in conentional DFA. Alternative options are 'spline', where B-splines are used to model the trends
+#' or 'gp', where gaussian predictive processes are used. If models other than 'rw' are used, there are some key points. First, the MA and AR
+#' parameters on these models will be turned off. Second, for B-splines the process_sigma becomes an optional scalar on the spline coefficients,
+#' and is turned off by default. Third, the number of knots can be specified (more knots = more wiggliness, and n_knots < N). For models
+#' with > 2 trends, each trend has their own spline coefficients estimated though the knot locations are assumed shared. If knots aren't specified,
+#' the default is N/3.
+#' @param n_knots The number of knots for the B-spline of Gaussian predictive process models. Optional, defaults to round(N/3)
+#' @param knot_locs Locations of knots (optional), defaults to uniform spacing between 1 and N
+#' @param family String describing the observation model. Default is "gaussian",
+#'   but included options are "gamma", "lognormal", negative binomial ("nbinom2"),
+#'   "poisson", or "binomial". The binomial family is assumed to have logit link,
+#'   gaussian family is assumed to be identity, and the rest are log-link.
+#' @param gp_theta_prior A 2-element vector controlling the prior on the Gaussian process parameter in cov_exp_quad.
+#'   This prior is a half-Student t prior, with the first argument of gp_theta_prior being the degrees of freedom (nu),
+#'   and the second element being the standard deviation
 #' @param ... Any other arguments to pass to [rstan::sampling()].
 #' @param par_list A vector of parameter names of variables to be estimated by Stan. If NULL, this will default to
 #'   c("x", "Z", "sigma", "log_lik", "psi","xstar") for most models -- though if AR / MA, or Student-t models are used
@@ -56,6 +72,7 @@
 #'   you will need to pass in a larger list. Setting this argument to "all" will monitor all parameters, enabling the use
 #'   of diagnostic functions -- but making the models a lot larger for storage. Finally, this argument may be a custom string
 #'   of parameters to monitor, e.g. c("x","sigma")
+#' @param verbose Whether to print iterations and information from Stan, defaults to FALSE.
 #' @details Note that there is nothing restricting the loadings and trends from
 #'   being inverted (i.e. multiplied by `-1`) for a given chain. Therefore, if
 #'   you fit multiple chains, the package will attempt to determine which chains
@@ -65,6 +82,8 @@
 #' @export
 #'
 #' @importFrom rstan sampling
+#' @importFrom splines bs
+#' @importFrom stats dist gaussian
 #' @import Rcpp
 #' @importFrom graphics lines par plot points polygon segments
 #' @importFrom stats na.omit runif
@@ -76,20 +95,29 @@
 #' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1)
 #'\dontrun{
 #' # example of observation error covariates
+#' set.seed(42)
 #' obs_covar = expand.grid("time"=1:20,"timeseries"=1:3,"covariate"=1)
 #' obs_covar$value=rnorm(nrow(obs_covar),0,0.1)
 #' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, obs_covar=obs_covar)
 #'
 #' # example of process error covariates
-#' pro_covar = expand.grid("time"=1:20,"trend"=1:3,"covariate"=1)
+#' pro_covar = expand.grid("time"=1:20,"trend"=1:2,"covariate"=1)
 #' pro_covar$value=rnorm(nrow(pro_covar),0,0.1)
-#' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, pro_covar=pro_covar)
+#' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, num_trends = 2, pro_covar=pro_covar)
 #'
 #' # example of long format data
 #' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
 #' obs <- c(s$y_sim[1,], s$y_sim[2,], s$y_sim[3,])
 #' long = data.frame("obs" = obs, "ts" = sort(rep(1:3,20)), "time" = rep(1:20,3))
 #' m = fit_dfa(y = long, data_shape = "long", iter = 50, chains = 1)
+#'
+#' # example of long format data with obs covariates
+#' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
+#' obs <- c(s$y_sim[1,], s$y_sim[2,], s$y_sim[3,])
+#' long = data.frame("obs" = obs, "ts" = sort(rep(1:3,20)), "time" = rep(1:20,3))
+#' obs_covar = expand.grid("time"=1:20,"timeseries"=1:3,"covariate"=1:2)
+#' obs_covar$value=rnorm(nrow(obs_covar),0,0.1)
+#' m = fit_dfa(y = long, data_shape = "long", iter = 50, chains = 1,obs_covar=obs_covar)
 #'
 #' # example of model with Z constrained to be proportions and wide format data
 #' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
@@ -100,6 +128,14 @@
 #' obs <- c(s$y_sim[1,], s$y_sim[2,], s$y_sim[3,])
 #' long = data.frame("obs" = obs, "ts" = sort(rep(1:3,20)), "time" = rep(1:20,3))
 #' m = fit_dfa(y = long, data_shape = "long", z_model = "proportion", iter = 50, chains = 1)
+#'
+#' #' # example of B-spline model with wide format data
+#' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
+#' m = fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "spline", n_knots = 10)
+#'
+#' # example of B-spline model with wide format data
+#' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
+#' m = fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "gp", n_knots = 5)
 #'}
 fit_dfa <- function(y = y,
                     num_trends = 1,
@@ -122,11 +158,30 @@ fit_dfa <- function(y = y,
                     pro_covar = NULL,
                     z_bound = NULL,
                     z_model = c("dfa","proportion"),
+                    trend_model = c("rw","spline","gp"),
+                    n_knots = NULL,
+                    knot_locs = NULL,
                     par_list = NULL,
+                    family = "gaussian",
+                    verbose = FALSE,
+                    gp_theta_prior = c(3,1),
                     ...) {
   # check arguments
   data_shape <- match.arg(data_shape, c("wide","long"))
   z_model <- match.arg(z_model, c("dfa","proportion"))
+  trend_model <- match.arg(trend_model, c("rw","spline","gp"))
+
+  obs_model <- match(family, c("gaussian", "gamma", "poisson", "nbinom2",
+  "binomial", "lognormal"))
+  if(is.na(obs_model)) {
+    stop("Error: family not found. Please enter family as gaussian(), gamma(), etc.")
+  }
+  if(family != "gaussian") {
+    if(data_shape=="wide") stop("Error: if family is non-gaussian, data must be in long format")
+    if(est_correlation == TRUE) stop("Error: correlation can't be estimated with non-gaussian data. Please set est_correlation=FALSE")
+  }
+
+  orig_data = y # save original data
 
   if (ncol(y) < nrow(y) && data_shape[1] == "wide") {
     warning(
@@ -148,10 +203,10 @@ fit_dfa <- function(y = y,
       stop("Error: data shape is long, and must contain a field 'obs' representing observations")
     }
     # rescale if needed
-    y$time = y$time - min(y[,"time"]) + 1 # min time now = 1
-    y$ts = as.numeric(as.factor(y[,"ts"]))
-    N = max(y[,"time"])
-    P = max(y[,"ts"])
+    #y$time <- y$time - min(y[["time"]]) + 1 # min time now = 1
+    y$ts <- as.numeric(as.factor(y[["ts"]]))
+    N <- max(y[["time"]])
+    P <- max(y[["ts"]])
   }
 
   if(data_shape[1]=="wide") {
@@ -182,32 +237,34 @@ fit_dfa <- function(y = y,
   nZ <- P * K - sum(seq_len(K)) # number of non-zero parameters that are unconstrained
 
   # standardizing data by rows only works if data provided in "wide" format
-  if(data_shape[1] == "wide") {
-    for (i in seq_len(P)) {
-      if (zscore) {
-        if (length(unique(na.omit(c(y[i, ])))) == 1L) {
-          stop("Can't scale one or more of the time series because all values ",
-            "are the same. Remove this/these time series or set `zscore = FALSE`.",
-            call. = FALSE
-          )
+  if(family == "gaussian") {
+    if(data_shape[1] == "wide") {
+      for (i in seq_len(P)) {
+        if (zscore) {
+          if (length(unique(na.omit(c(y[i, ])))) == 1L) {
+            stop("Can't scale one or more of the time series because all values ",
+              "are the same. Remove this/these time series or set `zscore = FALSE`.",
+              call. = FALSE
+            )
+          }
+          y[i, ] <- scale(y[i, ], center = TRUE, scale = TRUE)
+        } else {
+          y[i, ] <- scale(y[i, ], center = TRUE, scale = FALSE)
         }
-        y[i, ] <- scale(y[i, ], center = TRUE, scale = TRUE)
-      } else {
-        y[i, ] <- scale(y[i, ], center = TRUE, scale = FALSE)
-      }
-    }
-  } else {
-    if(zscore) {
-      # standardize
-      for(i in seq_len(P)) {
-        indx = which(y[,"ts"] == i)
-        y[indx,"obs"] = scale(y[indx,"obs" ], center = TRUE, scale = TRUE)
       }
     } else {
-      # just center
-      for(i in seq_len(P)) {
-        indx = which(y[,"ts"] == i)
-        y[indx,"obs"] = scale(y[indx, "obs"], center = TRUE, scale = FALSE)
+      if(zscore) {
+        # standardize
+        for(i in seq_len(P)) {
+          indx = which(y[["ts"]] == i)
+          y[indx,"obs"] = scale(y[indx,"obs" ], center = TRUE, scale = TRUE)
+        }
+      } else {
+        # just center
+        for(i in seq_len(P)) {
+          indx = which(y[["ts"]] == i)
+          y[indx,"obs"] = scale(y[indx, "obs"], center = TRUE, scale = FALSE)
+        }
       }
     }
   }
@@ -250,14 +307,15 @@ fit_dfa <- function(y = y,
     n_na <- length(row_indx_na)
     y <- y[!is.na(y)]
   } else {
-    row_indx_pos = y[,"ts"]
-    col_indx_pos = y[,"time"]
+    y = y[which(!is.na(y[["obs"]])),]
+    row_indx_pos = y[["ts"]]
+    col_indx_pos = y[["time"]]
     n_pos = length(row_indx_pos)
     # these are just dummy placeholders
     row_indx_na = matrix(1,1,1)[is.na(runif(1))]
     col_indx_na = matrix(1,1,1)[is.na(runif(1))]
     n_na <- length(row_indx_na)
-    y = y[,"obs"]
+    y = y[["obs"]]
   }
 
   # flag for whether to use a normal dist
@@ -266,36 +324,92 @@ fit_dfa <- function(y = y,
 
   # covariates
   if(!is.null(obs_covar)) {
-    obs_covar_index = as.matrix(obs_covar[,c("time","timeseries","covariate")])
-    num_obs_covar = nrow(obs_covar_index)
-    n_obs_covar = length(unique(obs_covar_index[,"covariate"]))
-    obs_covar_value = obs_covar[,"value"]
+    obs_covar_index <- as.matrix(obs_covar[,c("time","timeseries","covariate")])
+    num_obs_covar <- nrow(obs_covar_index)
+    n_obs_covar <- length(unique(obs_covar_index[,"covariate"]))
+    obs_covar_value <- obs_covar[,"value"]
+
+    if(data_shape[1] == "wide") {
+      match_obs_covar <- rep(0, num_obs_covar)
+    } else {
+      match_obs_covar <- match(paste(obs_covar$time,obs_covar$timeseries), paste(Y$time[which(!is.na(Y$obs))],Y$ts[which(!is.na(Y$obs))]))
+    }
+
   } else {
-    num_obs_covar = 0
-    n_obs_covar = 0
-    obs_covar_value = c(0)[0]
-    obs_covar_index = matrix(0,1,3)[c(0)[0],]
+    num_obs_covar <- 0
+    n_obs_covar <- 0
+    obs_covar_value <- c(0)[0]
+    match_obs_covar <- c(0)[0]
+    obs_covar_index <- matrix(0,1,3)[c(0)[0],]
   }
   if(!is.null(pro_covar)) {
-    pro_covar_index = as.matrix(pro_covar[,c("time","trend","covariate")])
-    num_pro_covar = nrow(pro_covar_index)
-    n_pro_covar = length(unique(pro_covar_index[,"covariate"]))
-    pro_covar_value = pro_covar[,"value"]
+    pro_covar_index <- as.matrix(pro_covar[,c("time","trend","covariate")])
+    num_pro_covar <- nrow(pro_covar_index)
+    n_pro_covar <- length(unique(pro_covar_index[,"covariate"]))
+    pro_covar_value <- pro_covar[,"value"]
+
   } else {
-    num_pro_covar = 0
-    n_pro_covar = 0
-    pro_covar_value = c(0)[0]
-    pro_covar_index = matrix(0,1,3)[c(0)[0],]
+    num_pro_covar <- 0
+    n_pro_covar <- 0
+    pro_covar_value <- c(0)[0]
+    pro_covar_index <- matrix(0,1,3)[c(0)[0],]
   }
 
   if(is.null(z_bound)) {
-    z_bound = c(-100,100)
+    z_bound <- c(-100,100)
   }
 
-  n_sigma_process = 1
-  if(equal_process_sigma == FALSE) n_sigma_process = K
-  est_sigma_process = 0
-  if(estimate_process_sigma == TRUE) est_sigma_process = 1
+  n_sigma_process <- 1
+  if(equal_process_sigma == FALSE) n_sigma_process <- K
+  est_sigma_process <- 0
+  if(estimate_process_sigma == TRUE) est_sigma_process <- 1
+
+  # default args that need to be passed in
+  est_spline <- 0
+  est_gp <- 0
+  est_rw <- 1 # these are flags specifying model structure. default is rw
+  if(is.null(n_knots)) n_knots <- round(N/3)
+  if(is.null(knot_locs)) knot_locs = seq(1,N,length.out=n_knots)
+  distKnots <- matrix(0, n_knots, n_knots)
+  #distKnots21 <- matrix(0, N, n_knots)
+  distKnots21_pred <- rep(0, n_knots)
+  # set up cubic b-splines design matrix
+  B_spline <- matrix(0, n_knots, N)
+
+  if(trend_model == "spline") {
+    est_spline <- 1
+    est_rw <- 0
+    # turn of things conventionally estimated when trend is a random walk
+    estimate_trend_ar <- FALSE
+    estimate_trend_ma <- FALSE
+    estimate_nu <- FALSE
+    B_spline <- t(splines::bs(1:N, df=n_knots, degree = 3, intercept = TRUE))
+  }
+  if(trend_model == "gp") {
+    # Gaussian kernel
+    est_gp = 1
+    est_rw <- 0
+    if(is.null(knot_locs)) knot_locs = seq(1,N,length.out=n_knots)
+    distKnots = as.matrix(stats::dist(knot_locs)) # distances between time stamps
+    distAll = as.matrix(stats::dist(c(1:N,knot_locs))) # distances between data and knot locs
+    #distKnots21 <- t(distAll[-seq_len(N), 1:N])
+    distKnots21_pred <- as.matrix(stats::dist(c(N+1,knot_locs)))[1,-1]
+    #distKnots <- distKnots ^ 2
+    #distKnots21 <- distKnots21 ^ 2
+    distKnots21_pred <- distKnots21_pred ^ 2
+    est_sigma_process <- 1 # turn this on as a scale for variance
+    estimate_trend_ar <- FALSE
+    estimate_trend_ma <- FALSE
+    estimate_nu <- FALSE
+  }
+
+  y_int <- rep(0, length(y))
+  if(family %in% c("binomial", "nbinom2", "poisson")) {
+    y_int = as.integer(y)
+  }
+  est_sigma_params <- ifelse(family %in% c("gaussian","lognormal"), 1, 0);
+  est_gamma_params <- ifelse(family=="gamma",1,0);
+  est_nb2_params <- ifelse(family=="nbinom2",1,0);
 
   data_list <- list(
     N = N,
@@ -303,6 +417,7 @@ fit_dfa <- function(y = y,
     K = K,
     nZ = nZ,
     y = y,
+    y_int = y_int,
     row_indx = row_indx,
     col_indx = col_indx,
     nZero = nZero,
@@ -326,6 +441,7 @@ fit_dfa <- function(y = y,
     n_obs_covar = n_obs_covar,
     obs_covar_value = obs_covar_value,
     obs_covar_index = obs_covar_index,
+    match_obs_covar = match_obs_covar,
     num_pro_covar = num_pro_covar,
     n_pro_covar = n_pro_covar,
     pro_covar_value = pro_covar_value,
@@ -334,12 +450,34 @@ fit_dfa <- function(y = y,
     long_format = ifelse(data_shape[1]=="wide",0,1),
     proportional_model = ifelse(z_model[1]=="dfa",0,1),
     est_sigma_process = est_sigma_process,
-    n_sigma_process = n_sigma_process
+    n_sigma_process = n_sigma_process,
+    est_rw = est_rw,
+    est_spline = est_spline,
+    B_spline = B_spline,
+    n_knots = n_knots,
+    knot_locs = knot_locs,
+    est_gp = est_gp,
+    #distKnots = distKnots,
+    #distKnots21 = distKnots21,
+    obs_model = obs_model,
+    distKnots21_pred = matrix(distKnots21_pred,nrow=1),
+    est_sigma_params = est_sigma_params,
+    est_gamma_params = est_gamma_params,
+    est_nb2_params = est_nb2_params,
+    gp_theta_prior = gp_theta_prior
   )
 
   if(is.null(par_list)) {
-    pars <- c("x", "Z", "sigma", "log_lik", "psi","xstar")
+    pars <- c("x", "Z", "log_lik", "psi","xstar")
+  } else {
+    pars = par_list
   }
+
+  # family
+  if(family %in% c("gaussian","lognormal")) pars <- c(pars, "sigma")
+  if(family %in% c("gamma")) pars <- c(pars, "gamma_a")
+  if(family %in% c("nbinom2")) pars <- c(pars, "nb2_phi")
+
   if (est_correlation) pars <- c(pars, "Omega", "Sigma") # add correlation matrix
   if (estimate_nu) pars <- c(pars, "nu")
   if (estimate_trend_ar) pars <- c(pars, "phi")
@@ -347,12 +485,11 @@ fit_dfa <- function(y = y,
   if(!is.null(obs_covar)) pars <- c(pars, "b_obs")
   if(!is.null(pro_covar)) pars <- c(pars, "b_pro")
   if(est_sigma_process) pars <- c(pars, "sigma_process")
+  if(trend_model=="gp") pars <- c(pars, "gp_theta")
 
   if(!is.null(par_list)) {
-    if(par_list=="all") {
-    pars <- pars <- c("x", "Z", "sigma", "log_lik", "psi","xstar",
-      "devs","x0","z","zpos","sigma_process","p_z",
-      "b_obs","b_pro","phi","theta","Lcorr","ymiss","nu") # removed pred
+    if(par_list[1]=="all") {
+    pars <- NA # removed pred
     }
   }
 
@@ -364,9 +501,11 @@ fit_dfa <- function(y = y,
     chains = chains,
     iter = iter,
     thin = thin,
+    show_messages = verbose,
     ...
   )
 
+  out <- list()
   if (sample) {
     mod <- do.call(sampling, sampling_args)
     if (chains > 1) {
@@ -379,14 +518,20 @@ fit_dfa <- function(y = y,
         monitor = rstan::monitor(e)
       )
     }
-
-    out[["data"]] <- Y # keep data included
-    out[["shape"]] = data_shape
-    out[["z_model"]] = z_model
-    out <- structure(out, class = "bayesdfa")
-  } else {
-    out <- data_list
   }
+  out[["sampling_args"]] <- sampling_args
+  out[["orig_data"]] <- orig_data
+  out[["shape"]] <- data_shape
+  out[["z_model"]] <- z_model
+  out[["z_bound"]] <- z_bound
+  out[["trend_model"]] <- trend_model
+  out[["sample"]] <- sample
+  out[["zscore"]] <- zscore
+  out[["obs_covar"]] <- obs_covar
+  out[["pro_covar"]] <- pro_covar
+  out[["family"]] <- family
+
+  out <- structure(out, class = "bayesdfa")
   out
 }
 
