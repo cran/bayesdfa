@@ -39,14 +39,14 @@ for(i in 1:nrow(sim_dat$pred)) {
 
 ## ----fit-model, message=FALSE, warning=FALSE, results='hide'------------------
 f1 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 2, zscore = TRUE,
+  y = sim_dat$y_sim, num_trends = 2, scale="zscore",
   iter = iter, chains = chains, thin = 1
 )
 r1 <- rotate_trends(f1)
 
 ## ----fit-model-2, message=FALSE, warning=FALSE, results='hide'----------------
 f2 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 2, zscore = TRUE, estimate_process_sigma = TRUE,
+  y = sim_dat$y_sim, num_trends = 2, scale="zscore", estimate_process_sigma = TRUE,
   equal_process_sigma = FALSE,
   iter = iter, chains = chains, thin = 1
 )
@@ -54,7 +54,7 @@ r2 <- rotate_trends(f2)
 
 ## ----fit-model-3, message=FALSE, warning=FALSE, results='hide'----------------
 f3 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 2, zscore = FALSE, estimate_process_sigma = TRUE,
+  y = sim_dat$y_sim, num_trends = 2, scale="center", estimate_process_sigma = TRUE,
   equal_process_sigma = FALSE,
   iter = iter, chains = chains, thin = 1
 )
@@ -62,14 +62,14 @@ r3 <- rotate_trends(f3)
 
 ## ----fit-model-4, message=FALSE, warning=FALSE, results='hide'----------------
 f4 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 2, zscore = TRUE, estimate_process_sigma = TRUE,
+  y = sim_dat$y_sim, num_trends = 2, scale="zscore", estimate_process_sigma = TRUE,
   equal_process_sigma = TRUE,
   iter = iter, chains = chains, thin = 1
 )
 r4 <- rotate_trends(f4)
 
 f5 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 2, zscore = FALSE, estimate_process_sigma = TRUE,
+  y = sim_dat$y_sim, num_trends = 2, scale="center", estimate_process_sigma = TRUE,
   equal_process_sigma = TRUE,
   iter = iter, chains = chains, thin = 1
 )

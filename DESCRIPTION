@@ -1,7 +1,7 @@
 Package: bayesdfa
 Type: Package
 Title: Bayesian Dynamic Factor Analysis (DFA) with 'Stan'
-Version: 0.1.7
+Version: 1.0.0
 Authors@R: c(
     person(c("Eric", "J."), "Ward", role = c("aut", "cre"), 
       email = "eric.ward@noaa.gov"),
@@ -39,7 +39,7 @@ VignetteBuilder: knitr
 SystemRequirements: GNU make
 Biarch: true
 NeedsCompilation: yes
-Packaged: 2021-05-04 15:57:51 UTC; ericward
+Packaged: 2021-05-18 20:39:37 UTC; eric.ward
 Author: Eric J. Ward [aut, cre],
   Sean C. Anderson [aut],
   Luis A. Damiano [aut],
@@ -52,4 +52,4 @@ Author: Eric J. Ward [aut, cre],
   Trustees of Columbia University [cph]
 Maintainer: Eric J. Ward <eric.ward@noaa.gov>
 Repository: CRAN
-Date/Publication: 2021-05-04 17:30:08 UTC
+Date/Publication: 2021-05-19 02:00:02 UTC

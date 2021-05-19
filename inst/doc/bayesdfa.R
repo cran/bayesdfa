@@ -26,7 +26,7 @@ ggplot(df, aes(time,y,group=ts,col=ts)) + geom_line() + theme_bw() +
 
 ## ----fit-1-trend, message=FALSE, warning=FALSE, results='hide'----------------
 f1 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 1, zscore = TRUE,
+  y = sim_dat$y_sim, num_trends = 1, scale="zscore",
   iter = iter, chains = chains, thin = 1
 )
 
@@ -47,13 +47,13 @@ plot_fitted(f1) + theme_bw()
 
 ## ----fit-models, warning=FALSE, results='hide', message=FALSE-----------------
 f2 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 2, zscore = TRUE,
+  y = sim_dat$y_sim, num_trends = 2, scale="zscore",
   iter = iter, chains = chains, thin = 1
 )
 r2 <- rotate_trends(f2)
 
 f3 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 3, zscore = TRUE,
+  y = sim_dat$y_sim, num_trends = 3, scale="zscore",
   iter = chains, chains = chains, thin = 1
 )
 r3 <- rotate_trends(f3)
@@ -94,7 +94,7 @@ matplot(scale(t(sim_dat$y_sim)), type = "l", ylab = "Response", xlab = "Time")
 
 ## ----fit-2-trend-extreme, message=FALSE, warning=FALSE, results='hide'--------
 t2 <- fit_dfa(
-  y = sim_dat$y_sim, num_trends = 2, zscore = TRUE,
+  y = sim_dat$y_sim, num_trends = 2, scale="zscore",
   iter = iter, chains = chains, thin = 1, estimate_nu = TRUE
 )
 

@@ -29,7 +29,7 @@ y = pred + matrix(rnorm(nrow(pred)*ncol(pred),0,0.1), nrow=nrow(pred), ncol = nc
 
 ## ---- message=FALSE, warning=FALSE, results='hide'----------------------------
 fit <- fit_dfa(y = y, iter = iter, chains = chains, num_trends = 2, seed = 42,
-    z_model = "proportion",zscore=FALSE)
+    z_model = "proportion",scale="center")
 
 ## -----------------------------------------------------------------------------
 pars = rstan::extract(fit$model,permuted=TRUE)
@@ -59,7 +59,7 @@ y = pred + matrix(rnorm(nrow(pred)*ncol(pred),0,0.01), nrow=nrow(pred), ncol = n
 
 ## ----message=FALSE, warning=FALSE, results='hide'-----------------------------
 fit <- fit_dfa(y = y, iter = iter, chains = chains, num_trends = 3, seed = 42,
-    z_model = "proportion",zscore=FALSE)
+    z_model = "proportion",scale="center")
 
 ## ----echo=FALSE---------------------------------------------------------------
 pars = rstan::extract(fit$model,permuted=TRUE)
