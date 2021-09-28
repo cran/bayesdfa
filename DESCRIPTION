@@ -1,7 +1,7 @@
 Package: bayesdfa
 Type: Package
 Title: Bayesian Dynamic Factor Analysis (DFA) with 'Stan'
-Version: 1.1.0
+Version: 1.2.0
 Authors@R: c(
     person(c("Eric", "J."), "Ward", role = c("aut", "cre"), 
       email = "eric.ward@noaa.gov"),
@@ -25,9 +25,9 @@ Description: Implements Bayesian dynamic factor analysis with 'Stan'. Dynamic
 License: GPL (>= 3)
 Encoding: UTF-8
 Depends: R (>= 3.5.0)
-Imports: dplyr, ggplot2, loo (>= 2.0.0), methods, Rcpp (>= 0.12.0),
-        RcppParallel (>= 5.0.1), reshape2, rlang, rstan (>= 2.18.1),
-        rstantools (>= 2.1.1), viridisLite
+Imports: dplyr, ggplot2, loo (>= 2.0.0), methods, mgcv (>= 1.8.13),
+        Rcpp (>= 0.12.0), RcppParallel (>= 5.0.1), reshape2, rlang,
+        rstan (>= 2.18.1), rstantools (>= 2.1.1), viridisLite
 LinkingTo: BH (>= 1.66.0), Rcpp (>= 0.12.0), RcppEigen (>= 0.3.3.3.0),
         RcppParallel (>= 5.0.1), rstan (>= 2.18.1), StanHeaders (>=
         2.18.1)
@@ -39,7 +39,7 @@ VignetteBuilder: knitr
 SystemRequirements: GNU make
 Biarch: true
 NeedsCompilation: yes
-Packaged: 2021-05-25 17:09:04 UTC; eric.ward
+Packaged: 2021-09-28 12:18:32 UTC; ericward
 Author: Eric J. Ward [aut, cre],
   Sean C. Anderson [aut],
   Luis A. Damiano [aut],
@@ -52,4 +52,4 @@ Author: Eric J. Ward [aut, cre],
   Trustees of Columbia University [cph]
 Maintainer: Eric J. Ward <eric.ward@noaa.gov>
 Repository: CRAN
-Date/Publication: 2021-05-28 18:10:05 UTC
+Date/Publication: 2021-09-28 13:20:02 UTC

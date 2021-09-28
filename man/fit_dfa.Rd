@@ -20,13 +20,13 @@ fit_dfa(
   estimate_trend_ma = FALSE,
   estimate_process_sigma = FALSE,
   equal_process_sigma = TRUE,
-  sample = TRUE,
+  estimation = c("sampling", "optimizing", "vb", "none"),
   data_shape = c("wide", "long"),
   obs_covar = NULL,
   pro_covar = NULL,
   z_bound = NULL,
   z_model = c("dfa", "proportion"),
-  trend_model = c("rw", "spline", "gp"),
+  trend_model = c("rw", "bs", "ps", "gp"),
   n_knots = NULL,
   knot_locs = NULL,
   par_list = NULL,
@@ -54,7 +54,8 @@ variances.}
 \item{scale}{Character string, used to standardized data. Can be "zscore" to center and
 standardize data, "center" to just standardize data, or "none". Defaults to "zscore"}
 
-\item{iter}{Number of iterations in Stan sampling, defaults to 2000.}
+\item{iter}{Number of iterations in Stan sampling, defaults to 2000. Used for both
+\code{\link[rstan:stanmodel-method-sampling]{rstan::sampling()}} and \code{\link[rstan:stanmodel-method-vb]{rstan::vb()}}}
 
 \item{chains}{Number of chains in Stan sampling, defaults to 4.}
 
@@ -85,9 +86,9 @@ sigma is fixed at 1, like conventional DFAs.}
 \item{equal_process_sigma}{Logical. If process sigma is estimated, whether or not to estimate a single shared value across trends (default)
 or estimate equal values for each trend}
 
-\item{sample}{Logical. Should the model be sampled from? If \code{FALSE}, then the
-data list object that would have been passed to Stan is returned instead.
-This is useful for debugging and simulation. Defaults to \code{TRUE}.}
+\item{estimation}{Character string. Should the model be sampled using \code{\link[rstan:stanmodel-method-sampling]{rstan::sampling()}} ("sampling",default),
+\code{\link[rstan:stanmodel-method-optimizing]{rstan::optimizing()}} ("optimizing"), variational inference \code{\link[rstan:stanmodel-method-vb]{rstan::vb()}} ("vb"),
+or no estimation done ("none"). No estimation may be useful for debugging and simulation.}
 
 \item{data_shape}{If \code{wide} (the current default) then the input data should
 have rows representing the various timeseries and columns representing the
@@ -109,14 +110,16 @@ trend, and (4) the value of the covariate}
 \item{z_model}{Optional argument allowing for elements of Z to be constrained to be proportions (each time series modeled as a mixture of trends). Arguments can be "dfa" (default) or "proportion"}
 
 \item{trend_model}{Optional argument to change the model of the underlying latent trend. By default this is set to 'rw', where the trend
-is modeled as a random walk - as in conentional DFA. Alternative options are 'spline', where B-splines are used to model the trends
+is modeled as a random walk - as in conentional DFA. Alternative options are 'bs', where B-splines are used to model the trends,
+"ps" where P-splines are used to model the trends,
 or 'gp', where gaussian predictive processes are used. If models other than 'rw' are used, there are some key points. First, the MA and AR
-parameters on these models will be turned off. Second, for B-splines the process_sigma becomes an optional scalar on the spline coefficients,
+parameters on these models will be turned off. Second, for B-splines and P-splines, the process_sigma becomes an optional scalar on the spline coefficients,
 and is turned off by default. Third, the number of knots can be specified (more knots = more wiggliness, and n_knots < N). For models
 with > 2 trends, each trend has their own spline coefficients estimated though the knot locations are assumed shared. If knots aren't specified,
-the default is N/3.}
+the default is N/3. By default both the B-spline and P-spline models use 3rd degree functions for smoothing, and include an intercept term. The P-spline
+model uses a difference penalty of 2.}
 
-\item{n_knots}{The number of knots for the B-spline of Gaussian predictive process models. Optional, defaults to round(N/3)}
+\item{n_knots}{The number of knots for the B-spline, P-spline, or Gaussian predictive process models. Optional, defaults to round(N/3)}
 
 \item{knot_locs}{Locations of knots (optional), defaults to uniform spacing between 1 and N}
 
@@ -194,9 +197,13 @@ m <- fit_dfa(y = long, data_shape = "long", z_model = "proportion", iter = 50, c
 
 #' # example of B-spline model with wide format data
 s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
-m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "spline", n_knots = 10)
+m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "bs", n_knots = 10)
 
-# example of B-spline model with wide format data
+#' #' # example of P-spline model with wide format data
+s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
+m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "ps", n_knots = 10)
+
+# example of Gaussian process model with wide format data
 s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
 m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "gp", n_knots = 5)
 }

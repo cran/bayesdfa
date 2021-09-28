@@ -12,7 +12,8 @@
 #'   variances.
 #' @param scale Character string, used to standardized data. Can be "zscore" to center and
 #' standardize data, "center" to just standardize data, or "none". Defaults to "zscore"
-#' @param iter Number of iterations in Stan sampling, defaults to 2000.
+#' @param iter Number of iterations in Stan sampling, defaults to 2000. Used for both
+#' [rstan::sampling()] and [rstan::vb()]
 #' @param thin Thinning rate in Stan sampling, defaults to 1.
 #' @param chains Number of chains in Stan sampling, defaults to 4.
 #' @param control A list of options to pass to Stan sampling. Defaults to
@@ -32,9 +33,9 @@
 #'   sigma is fixed at 1, like conventional DFAs.
 #' @param equal_process_sigma Logical. If process sigma is estimated, whether or not to estimate a single shared value across trends (default)
 #'   or estimate equal values for each trend
-#' @param sample Logical. Should the model be sampled from? If `FALSE`, then the
-#'   data list object that would have been passed to Stan is returned instead.
-#'   This is useful for debugging and simulation. Defaults to `TRUE`.
+#' @param estimation Character string. Should the model be sampled using [rstan::sampling()] ("sampling",default),
+#' [rstan::optimizing()] ("optimizing"), variational inference [rstan::vb()] ("vb"),
+#' or no estimation done ("none"). No estimation may be useful for debugging and simulation.
 #' @param data_shape If `wide` (the current default) then the input data should
 #'   have rows representing the various timeseries and columns representing the
 #'   values through time. This matches the MARSS input data format. If `long`
@@ -50,13 +51,15 @@
 #' @param z_bound Optional hard constraints for estimated factor loadings -- really only applies to model with 1 trend. Passed in as a 2-element vector representing the lower and upper bound, e.g. (0, 100) to constrain positive
 #' @param z_model Optional argument allowing for elements of Z to be constrained to be proportions (each time series modeled as a mixture of trends). Arguments can be "dfa" (default) or "proportion"
 #' @param trend_model Optional argument to change the model of the underlying latent trend. By default this is set to 'rw', where the trend
-#' is modeled as a random walk - as in conentional DFA. Alternative options are 'spline', where B-splines are used to model the trends
+#' is modeled as a random walk - as in conentional DFA. Alternative options are 'bs', where B-splines are used to model the trends,
+#' "ps" where P-splines are used to model the trends,
 #' or 'gp', where gaussian predictive processes are used. If models other than 'rw' are used, there are some key points. First, the MA and AR
-#' parameters on these models will be turned off. Second, for B-splines the process_sigma becomes an optional scalar on the spline coefficients,
+#' parameters on these models will be turned off. Second, for B-splines and P-splines, the process_sigma becomes an optional scalar on the spline coefficients,
 #' and is turned off by default. Third, the number of knots can be specified (more knots = more wiggliness, and n_knots < N). For models
 #' with > 2 trends, each trend has their own spline coefficients estimated though the knot locations are assumed shared. If knots aren't specified,
-#' the default is N/3.
-#' @param n_knots The number of knots for the B-spline of Gaussian predictive process models. Optional, defaults to round(N/3)
+#' the default is N/3. By default both the B-spline and P-spline models use 3rd degree functions for smoothing, and include an intercept term. The P-spline
+#' model uses a difference penalty of 2.
+#' @param n_knots The number of knots for the B-spline, P-spline, or Gaussian predictive process models. Optional, defaults to round(N/3)
 #' @param knot_locs Locations of knots (optional), defaults to uniform spacing between 1 and N
 #' @param family String describing the observation model. Default is "gaussian",
 #'   but included options are "gamma", "lognormal", negative binomial ("nbinom2"),
@@ -82,8 +85,9 @@
 #'
 #' @export
 #'
-#' @importFrom rstan sampling
+#' @importFrom rstan sampling optimizing vb
 #' @importFrom splines bs
+#' @importFrom mgcv s smoothCon smooth2random
 #' @importFrom stats dist gaussian
 #' @import Rcpp
 #' @importFrom graphics lines par plot points polygon segments
@@ -132,9 +136,13 @@
 #'
 #' #' # example of B-spline model with wide format data
 #' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
-#' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "spline", n_knots = 10)
+#' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "bs", n_knots = 10)
 #'
-#' # example of B-spline model with wide format data
+#'#' #' # example of P-spline model with wide format data
+#' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
+#' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "ps", n_knots = 10)
+#'
+#' # example of Gaussian process model with wide format data
 #' s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
 #' m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "gp", n_knots = 5)
 #' }
@@ -153,13 +161,13 @@ fit_dfa <- function(y = y,
                     estimate_trend_ma = FALSE,
                     estimate_process_sigma = FALSE,
                     equal_process_sigma = TRUE,
-                    sample = TRUE,
+                    estimation = c("sampling", "optimizing", "vb", "none"),
                     data_shape = c("wide", "long"),
                     obs_covar = NULL,
                     pro_covar = NULL,
                     z_bound = NULL,
                     z_model = c("dfa", "proportion"),
-                    trend_model = c("rw", "spline", "gp"),
+                    trend_model = c("rw", "bs","ps", "gp"),
                     n_knots = NULL,
                     knot_locs = NULL,
                     par_list = NULL,
@@ -171,7 +179,7 @@ fit_dfa <- function(y = y,
   # check arguments
   data_shape <- match.arg(data_shape, c("wide", "long"))
   z_model <- match.arg(z_model, c("dfa", "proportion"))
-  trend_model <- match.arg(trend_model, c("rw", "spline", "gp"))
+  trend_model <- match.arg(trend_model, c("rw", "bs","ps", "gp"))
 
   obs_model <- match(family, c(
     "gaussian", "gamma", "poisson", "nbinom2",
@@ -388,16 +396,30 @@ fit_dfa <- function(y = y,
   # distKnots21 <- matrix(0, N, n_knots)
   distKnots21_pred <- rep(0, n_knots)
   # set up cubic b-splines design matrix
-  B_spline <- matrix(0, n_knots, N)
+  X_spline <- matrix(0, N, n_knots) # this is basis matrix
+  penalty_matrix <- matrix(0, n_knots, n_knots) # penalty, only for P-splines
 
-  if (trend_model == "spline") {
+  if (trend_model %in% c("bs","ps")) {
     est_spline <- 1
     est_rw <- 0
     # turn of things conventionally estimated when trend is a random walk
     estimate_trend_ar <- FALSE
     estimate_trend_ma <- FALSE
     estimate_nu <- FALSE
-    B_spline <- t(splines::bs(1:N, df = n_knots, degree = 3, intercept = TRUE))
+
+    df <- n_knots
+    degree <- 3
+    intercept=FALSE # set intercept FALSE because intercept x0 is estimated for each trend
+    if(trend_model=="bs") {
+      X_spline <-splines::bs(seq_len(N), df=n_knots, degree=3, intercept = intercept)
+    } else {
+      tempX = seq_len(N)
+      sspec <- mgcv::s(tempX,k=n_knots+2)
+      temp_dat <- data.frame(tempX=tempX, tempY = runif(N))
+      smoothcon <- mgcv::smoothCon(sspec,temp_dat)[[1]]
+      rasm <- mgcv::smooth2random(smoothcon, names(temp_dat), type = 2)
+      X_spline <- rasm$rand$Xr
+    }
   }
   if (trend_model == "gp") {
     # Gaussian kernel
@@ -467,7 +489,7 @@ fit_dfa <- function(y = y,
     n_sigma_process = n_sigma_process,
     est_rw = est_rw,
     est_spline = est_spline,
-    B_spline = B_spline,
+    X_spline = X_spline,
     n_knots = n_knots,
     knot_locs = knot_locs,
     est_gp = est_gp,
@@ -485,29 +507,30 @@ fit_dfa <- function(y = y,
   if (is.null(par_list)) {
     pars <- c("x", "Z", "log_lik", "xstar")
     if (expansion_prior) pars <- c(pars, "psi")
+
+    # family
+    if (family %in% c("gaussian", "lognormal")) pars <- c(pars, "sigma")
+    if (family %in% c("gamma")) pars <- c(pars, "gamma_a")
+    if (family %in% c("nbinom2")) pars <- c(pars, "nb2_phi")
+
+    if (est_correlation) pars <- c(pars, "Omega", "Sigma") # add correlation matrix
+    if (estimate_nu) pars <- c(pars, "nu")
+    if (estimate_trend_ar) pars <- c(pars, "phi")
+    if (estimate_trend_ma) pars <- c(pars, "theta")
+    if (!is.null(obs_covar)) pars <- c(pars, "b_obs")
+    if (!is.null(pro_covar)) pars <- c(pars, "b_pro")
+    if (est_sigma_process) pars <- c(pars, "sigma_process")
+    if (trend_model == "gp") pars <- c(pars, "gp_theta")
   } else {
     pars <- par_list
   }
-
-  # family
-  if (family %in% c("gaussian", "lognormal")) pars <- c(pars, "sigma")
-  if (family %in% c("gamma")) pars <- c(pars, "gamma_a")
-  if (family %in% c("nbinom2")) pars <- c(pars, "nb2_phi")
-
-  if (est_correlation) pars <- c(pars, "Omega", "Sigma") # add correlation matrix
-  if (estimate_nu) pars <- c(pars, "nu")
-  if (estimate_trend_ar) pars <- c(pars, "phi")
-  if (estimate_trend_ma) pars <- c(pars, "theta")
-  if (!is.null(obs_covar)) pars <- c(pars, "b_obs")
-  if (!is.null(pro_covar)) pars <- c(pars, "b_pro")
-  if (est_sigma_process) pars <- c(pars, "sigma_process")
-  if (trend_model == "gp") pars <- c(pars, "gp_theta")
-
+  # if par list = "all", monitor everything --
   if (!is.null(par_list)) {
     if (par_list[1] == "all") {
       pars <- NA # removed pred
     }
   }
+
 
   sampling_args <- list(
     object = stanmodels$dfa,
@@ -522,7 +545,7 @@ fit_dfa <- function(y = y,
   )
 
   out <- list()
-  if (sample) {
+  if (estimation[1]=="sampling") {
     mod <- do.call(sampling, sampling_args)
     if (chains > 1) {
       out <- invert_chains(mod, trends = num_trends, print = FALSE)
@@ -535,6 +558,32 @@ fit_dfa <- function(y = y,
       )
     }
   }
+  if(estimation[1]=="optimizing") {
+    sampling_args <- list(
+      object = stanmodels$dfa,
+      data = data_list,
+      verbose = verbose,
+      ...
+    )
+    mod <- do.call(optimizing, sampling_args)
+    out <- list(model = mod)
+  }
+  if(estimation[1]=="vb") {
+    sampling_args <- list(
+      object = stanmodels$dfa,
+      data = data_list,
+      iter = iter,
+      pars = pars,
+      ...
+    )
+    mod <- do.call(vb, sampling_args)
+    e <- rstan::extract(mod, permuted = FALSE)
+    ep <- rstan::extract(mod, permuted = TRUE)
+    out <- list(
+      model = mod, samples_permuted = ep, samples = e,
+      monitor = rstan::monitor(e)
+    )
+  }
 
   out[["sampling_args"]] <- sampling_args
   out[["orig_data"]] <- orig_data
@@ -542,7 +591,7 @@ fit_dfa <- function(y = y,
   out[["z_model"]] <- z_model
   out[["z_bound"]] <- z_bound
   out[["trend_model"]] <- trend_model
-  out[["sample"]] <- sample
+  out[["estimation"]] <- estimation
   out[["scale"]] <- scale[1]
   out[["obs_covar"]] <- obs_covar
   out[["pro_covar"]] <- pro_covar
