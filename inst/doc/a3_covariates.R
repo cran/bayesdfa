@@ -2,7 +2,7 @@
 library("knitr")
 opts_chunk$set(message = FALSE, fig.width = 5.5)
 
-## ---- message=FALSE, warning=FALSE--------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
 library(bayesdfa)
 library(ggplot2)
 library(dplyr)
@@ -68,7 +68,7 @@ for(i in 2:length(cov)) {
 
 y = sim_dat$Z %*% x
 
-## ---- eval=FALSE, results='hide', warning=FALSE, message=FALSE----------------
+## ----eval=FALSE, results='hide', warning=FALSE, message=FALSE-----------------
 #  pro_cov = expand.grid("trend"=1:2, "time"=1:20, "covariate"=1)
 #  pro_cov$value = cov[pro_cov$time]
 #  

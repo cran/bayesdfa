@@ -2,7 +2,7 @@
 library("knitr")
 opts_chunk$set(message = FALSE, fig.width = 5.5)
 
-## ---- message=FALSE, warning=FALSE--------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
 library(bayesdfa)
 library(ggplot2)
 library(dplyr)
@@ -27,7 +27,7 @@ m[5,] = c(0.7, 0.2) # time series # 5 is 70% trend 1
 pred = m%*%s$x
 y = pred + matrix(rnorm(nrow(pred)*ncol(pred),0,0.1), nrow=nrow(pred), ncol = ncol(pred))
 
-## ---- message=FALSE, warning=FALSE, results='hide'----------------------------
+## ----message=FALSE, warning=FALSE, results='hide'-----------------------------
 fit <- fit_dfa(y = y, iter = iter, chains = chains, num_trends = 2, seed = 42,
     z_model = "proportion",scale="center")
 

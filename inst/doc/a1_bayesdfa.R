@@ -2,7 +2,7 @@
 library("knitr")
 opts_chunk$set(message = FALSE, fig.width = 5.5)
 
-## ---- message=FALSE, warning=FALSE--------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
 library(bayesdfa)
 library(ggplot2)
 library(dplyr)
@@ -120,7 +120,7 @@ m = cbind(c("gaussian","lognormal","gamma","binomial","poisson","nbinom2"),
 colnames(m) = c("Family","link")
 knitr::kable(m)
 
-## ---- echo=FALSE, results='asis'----------------------------------------------
+## ----echo=FALSE, results='asis'-----------------------------------------------
 Z = matrix("",5,3)
 for(i in 1:5) {
   for(j in 1:3) {
@@ -133,7 +133,7 @@ Z[2,3] = "0"
 colnames(Z) = c("Trend 1","Trend 2","Trend 3")
 knitr::kable(Z)
 
-## ---- echo=FALSE, results='asis'----------------------------------------------
+## ----echo=FALSE, results='asis'-----------------------------------------------
 Z = matrix("",5,3)
 for(i in 1:5) {
   for(j in 1:3) {
@@ -159,4 +159,27 @@ knitr::kable(Z)
 
 ## ----plot-regime-flipped, eval=FALSE, fig.align='center', fig.cap="Estimated regimes (after flipping), from a HMM model applied to the first trend of a 2-trend DFA model with Student-t deviations.\\label{fig:plot-regime-flipped}"----
 #  plot_regime_model(reg_mod, flip_regimes = TRUE)
+
+## -----------------------------------------------------------------------------
+set.seed(1)
+sim_dat <- sim_dfa(
+  num_trends = 2,
+  num_years = 20,
+  num_ts = 4
+)
+
+df <- data.frame(obs = c(sim_dat$y_sim), time = sort(rep(1:20,4)),
+                 ts = rep(1:4,20))
+df$se <- runif(nrow(df), 0.6, 0.8)
+df$se[which(df$ts == 2)] = 0.2
+
+## -----------------------------------------------------------------------------
+df$weights <- (1 / df$se)^2
+
+## -----------------------------------------------------------------------------
+f2 <- fit_dfa(
+  y = df, num_trends = 2, scale="zscore",
+  iter = 500, chains = 1, thin = 1,
+  weights = "weights", data_shape = "long"
+)
 

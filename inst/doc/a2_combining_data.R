@@ -2,7 +2,7 @@
 library("knitr")
 opts_chunk$set(message = FALSE, fig.width = 5.5)
 
-## ---- message=FALSE, warning=FALSE--------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
 library(bayesdfa)
 library(ggplot2)
 library(dplyr)
@@ -83,7 +83,7 @@ output$ts_start=as.factor(output$ts_start)
 Y = sim$y_sim
 Y = t(scale(t(Y)))
 ts2 = data.frame(x = 1:100, y = Y[2,])
-ggplot(output, aes(x,y=estimated_trend,group=ts_start,col=ts_start)) + geom_line(size=2, alpha=0.7) + 
+ggplot(output, aes(x,y=estimated_trend,group=ts_start,col=ts_start)) + geom_line(linewidth=2, alpha=0.7) + 
   #scale_color_viridis(end=0.8,discrete = TRUE) + xlim(51,100) + 
   xlab("Time") + 
   ylab("Estimated time series (# 2)") +theme_bw()

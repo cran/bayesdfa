@@ -24,6 +24,7 @@ fit_dfa(
   data_shape = c("wide", "long"),
   obs_covar = NULL,
   pro_covar = NULL,
+  offset = NULL,
   z_bound = NULL,
   z_model = c("dfa", "proportion"),
   trend_model = c("rw", "bs", "ps", "gp"),
@@ -32,6 +33,7 @@ fit_dfa(
   par_list = NULL,
   family = "gaussian",
   verbose = FALSE,
+  weights = NULL,
   gp_theta_prior = c(3, 1),
   expansion_prior = FALSE,
   ...
@@ -105,6 +107,10 @@ trend, and (4) the value of the covariate}
 affected, (3) the covariate number for models with more than one covariate affecting each
 trend, and (4) the value of the covariate}
 
+\item{offset}{a string argument representing the name of the offset variable to be included. The variable name is in
+the data frame passed in, e.g. "offset". This only works when the data shape is "long". All transformations (such as log transformed effort)
+to the offset must be done before passing in the data.}
+
 \item{z_bound}{Optional hard constraints for estimated factor loadings -- really only applies to model with 1 trend. Passed in as a 2-element vector representing the lower and upper bound, e.g. (0, 100) to constrain positive}
 
 \item{z_model}{Optional argument allowing for elements of Z to be constrained to be proportions (each time series modeled as a mixture of trends). Arguments can be "dfa" (default) or "proportion"}
@@ -136,6 +142,10 @@ but included options are "gamma", "lognormal", negative binomial ("nbinom2"),
 gaussian family is assumed to be identity, and the rest are log-link.}
 
 \item{verbose}{Whether to print iterations and information from Stan, defaults to FALSE.}
+
+\item{weights}{Optional name of "weights" argument in data frame. This is only implemented when data
+are in long format. If not entered, defaults to weights = 1 for all observations. The implementation of weights
+varies slightly by family: Gaussian family models use -log(w_i) in the dispersion formula}
 
 \item{gp_theta_prior}{A 2-element vector controlling the prior on the Gaussian process parameter in cov_exp_quad.
 This prior is a half-Student t prior, with the first argument of gp_theta_prior being the degrees of freedom (nu),
@@ -206,6 +216,13 @@ m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "ps", n_knots = 1
 # example of Gaussian process model with wide format data
 s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
 m <- fit_dfa(y = s$y_sim, iter = 50, chains = 1, trend_model = "gp", n_knots = 5)
+
+# example of long format data
+s <- sim_dfa(num_trends = 1, num_years = 20, num_ts = 3)
+obs <- c(s$y_sim[1, ], s$y_sim[2, ], s$y_sim[3, ])
+long <- data.frame("obs" = obs, "ts" = sort(rep(1:3, 20)),
+"time" = rep(1:20, 3), "offset" = rep(0.1,length(obs)))
+m <- fit_dfa(y = long, data_shape = "long", offset = "offset", iter = 50, chains = 1)
 }
 }
 \seealso{

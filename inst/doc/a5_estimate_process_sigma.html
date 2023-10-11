@@ -12,110 +12,107 @@
 
 <meta name="author" content="Eric J. Ward, Sean C. Anderson, Mary E. Hunsicker, Mike A. Litzow, Luis A. Damiano, Mark D. Scheuerell, Elizabeth E. Holmes, Nick Tolimieri" />
 
-<meta name="date" content="2021-09-28" />
+<meta name="date" content="2023-10-11" />
 
 <title>Estimating process trend variability with bayesdfa</title>
 
-<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
-// v0.0.1
-// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
-
-document.addEventListener('DOMContentLoaded', function() {
-  const codeList = document.getElementsByClassName("sourceCode");
-  for (var i = 0; i < codeList.length; i++) {
-    var linkList = codeList[i].getElementsByTagName('a');
-    for (var j = 0; j < linkList.length; j++) {
-      if (linkList[j].innerHTML === "") {
-        linkList[j].setAttribute('aria-hidden', 'true');
-      }
-    }
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
   }
 });
 </script>
 
 <style type="text/css">
-  code{white-space: pre-wrap;}
-  span.smallcaps{font-variant: small-caps;}
-  span.underline{text-decoration: underline;}
-  div.column{display: inline-block; vertical-align: top; width: 50%;}
-  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-  ul.task-list{list-style: none;}
-    </style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
 
 
 <style type="text/css">
-  code {
-    white-space: pre;
-  }
-  .sourceCode {
-    overflow: visible;
-  }
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
 </style>
 <style type="text/css" data-origin="pandoc">
-code.sourceCode > span { display: inline-block; line-height: 1.25; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-code.sourceCode > span:empty { height: 1.2em; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
-  { counter-reset: source-line 0; }
+{ counter-reset: source-line 0; }
 pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
+{ position: relative; left: -4em; counter-increment: source-line; }
 pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-    color: #aaaaaa;
-  }
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
 }
-code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code span.at { color: #7d9029; } /* Attribute */
-code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
-code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code span.ch { color: #4070a0; } /* Char */
-code span.cn { color: #880000; } /* Constant */
-code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code span.dt { color: #902000; } /* DataType */
-code span.dv { color: #40a070; } /* DecVal */
-code span.er { color: #ff0000; font-weight: bold; } /* Error */
-code span.ex { } /* Extension */
-code span.fl { color: #40a070; } /* Float */
-code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code span.op { color: #666666; } /* Operator */
-code span.ot { color: #007020; } /* Other */
-code span.pp { color: #bc7a00; } /* Preprocessor */
-code span.sc { color: #4070a0; } /* SpecialChar */
-code span.ss { color: #bb6688; } /* SpecialString */
-code span.st { color: #4070a0; } /* String */
-code span.va { color: #19177c; } /* Variable */
-code span.vs { color: #4070a0; } /* VerbatimString */
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
 </style>
 <script>
 // apply pandoc div.sourceCode style to pre.sourceCode instead
@@ -124,13 +121,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -334,133 +338,160 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Estimating process trend variability with bayesdfa</h1>
-<h4 class="author">Eric J. Ward, Sean C. Anderson, Mary E. Hunsicker, Mike A. Litzow, Luis A. Damiano, Mark D. Scheuerell, Elizabeth E. Holmes, Nick Tolimieri</h4>
-<h4 class="date">2021-09-28</h4>
+<h1 class="title toc-ignore">Estimating process trend variability with
+bayesdfa</h1>
+<h4 class="author">Eric J. Ward, Sean C. Anderson, Mary E. Hunsicker,
+Mike A. Litzow, Luis A. Damiano, Mark D. Scheuerell, Elizabeth E.
+Holmes, Nick Tolimieri</h4>
+<h4 class="date">2023-10-11</h4>
 
 
 
-<p>A constraint of most DFA models is that the latent trends are modeled as random walks with fixed standard deviations (= 1). We can evaluate the ability to estimate these parameters in a Bayesian context below.</p>
+<p>A constraint of most DFA models is that the latent trends are modeled
+as random walks with fixed standard deviations (= 1). We can evaluate
+the ability to estimate these parameters in a Bayesian context
+below.</p>
 <p>Let’s load the necessary packages:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(bayesdfa)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(ggplot2)</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">library</span>(dplyr)</span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">library</span>(rstan)</span>
-<span id="cb1-5"><a href="#cb1-5"></a>chains =<span class="st"> </span><span class="dv">1</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>iter =<span class="st"> </span><span class="dv">10</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(bayesdfa)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(rstan)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>chains <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>iter <span class="ot">=</span> <span class="dv">10</span></span></code></pre></div>
 <div id="case-1-unequal-trend-variability" class="section level2">
 <h2>Case 1: unequal trend variability</h2>
-<p>First, let’s simulate some data. We will use the built-in function <code>sim_dfa()</code>, but normally you would start with your own data. We will simulate 20 data points from 4 time series, generated from 2 latent processes. For this first dataset, the data won’t include extremes, and loadings will be randomly assigned (default).</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb2-2"><a href="#cb2-2"></a>sim_dat &lt;-<span class="st"> </span><span class="kw">sim_dfa</span>(</span>
-<span id="cb2-3"><a href="#cb2-3"></a>  <span class="dt">num_trends =</span> <span class="dv">2</span>,</span>
-<span id="cb2-4"><a href="#cb2-4"></a>  <span class="dt">num_years =</span> <span class="dv">20</span>,</span>
-<span id="cb2-5"><a href="#cb2-5"></a>  <span class="dt">num_ts =</span> <span class="dv">4</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>)</span></code></pre></div>
-<p>We’ll tweak the default code though to model slightly different random walks, with different standard deviations for each trend. We’ll assume these standard deviations are 0.3 and 0.5, respectively.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb3-2"><a href="#cb3-2"></a>sim_dat<span class="op">$</span>x[<span class="dv">1</span>,] =<span class="st"> </span><span class="kw">cumsum</span>(<span class="kw">rnorm</span>(<span class="dt">n=</span><span class="kw">ncol</span>(sim_dat<span class="op">$</span>x), <span class="dv">0</span>, <span class="fl">0.1</span>))</span>
-<span id="cb3-3"><a href="#cb3-3"></a>sim_dat<span class="op">$</span>x[<span class="dv">2</span>,] =<span class="st"> </span><span class="kw">cumsum</span>(<span class="kw">rnorm</span>(<span class="dt">n=</span><span class="kw">ncol</span>(sim_dat<span class="op">$</span>x), <span class="dv">0</span>, <span class="dv">1</span>))</span></code></pre></div>
-<p>Looking at the random walks, we can see the 2nd trend (red dashed line) is more variable than the black line.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">matplot</span>(<span class="kw">t</span>(sim_dat<span class="op">$</span>x),</span>
-<span id="cb4-2"><a href="#cb4-2"></a>  <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>,</span>
-<span id="cb4-3"><a href="#cb4-3"></a>  <span class="dt">ylab =</span> <span class="st">&quot;Response&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;Time&quot;</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a>)</span></code></pre></div>
+<p>First, let’s simulate some data. We will use the built-in function
+<code>sim_dfa()</code>, but normally you would start with your own data.
+We will simulate 20 data points from 4 time series, generated from 2
+latent processes. For this first dataset, the data won’t include
+extremes, and loadings will be randomly assigned (default).</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>sim_dat <span class="ot">&lt;-</span> <span class="fu">sim_dfa</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">num_trends =</span> <span class="dv">2</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">num_years =</span> <span class="dv">20</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">num_ts =</span> <span class="dv">4</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>)</span></code></pre></div>
+<p>We’ll tweak the default code though to model slightly different
+random walks, with different standard deviations for each trend. We’ll
+assume these standard deviations are 0.3 and 0.5, respectively.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>sim_dat<span class="sc">$</span>x[<span class="dv">1</span>,] <span class="ot">=</span> <span class="fu">cumsum</span>(<span class="fu">rnorm</span>(<span class="at">n=</span><span class="fu">ncol</span>(sim_dat<span class="sc">$</span>x), <span class="dv">0</span>, <span class="fl">0.1</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>sim_dat<span class="sc">$</span>x[<span class="dv">2</span>,] <span class="ot">=</span> <span class="fu">cumsum</span>(<span class="fu">rnorm</span>(<span class="at">n=</span><span class="fu">ncol</span>(sim_dat<span class="sc">$</span>x), <span class="dv">0</span>, <span class="dv">1</span>))</span></code></pre></div>
+<p>Looking at the random walks, we can see the 2nd trend (red dashed
+line) is more variable than the black line.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">matplot</span>(<span class="fu">t</span>(sim_dat<span class="sc">$</span>x),</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;l&quot;</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">ylab =</span> <span class="st">&quot;Response&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Time&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>)</span></code></pre></div>
 <div class="figure" style="text-align: center">
 <img src="data:image/png;base64,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" alt="Simulated data, from a model with 2 latent trends and no extremes.\label{fig:simulate-data-plot}" />
 <p class="caption">
 Simulated data, from a model with 2 latent trends and no extremes.
 </p>
 </div>
-<p>Next, we’ll calculate the predicted values of each time series and add observation error</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>sim_dat<span class="op">$</span>pred =<span class="st"> </span>sim_dat<span class="op">$</span>Z <span class="op">%*%</span><span class="st"> </span>sim_dat<span class="op">$</span>x</span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(sim_dat<span class="op">$</span>pred)) {</span>
-<span id="cb5-3"><a href="#cb5-3"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">ncol</span>(sim_dat<span class="op">$</span>pred)) {</span>
-<span id="cb5-4"><a href="#cb5-4"></a>    sim_dat<span class="op">$</span>y_sim[i,j] =<span class="st"> </span>sim_dat<span class="op">$</span>pred[i,j] <span class="op">+</span><span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="fl">0.1</span>)</span>
-<span id="cb5-5"><a href="#cb5-5"></a>  }</span>
-<span id="cb5-6"><a href="#cb5-6"></a>}</span></code></pre></div>
+<p>Next, we’ll calculate the predicted values of each time series and
+add observation error</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>sim_dat<span class="sc">$</span>pred <span class="ot">=</span> sim_dat<span class="sc">$</span>Z <span class="sc">%*%</span> sim_dat<span class="sc">$</span>x</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(sim_dat<span class="sc">$</span>pred)) {</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(sim_dat<span class="sc">$</span>pred)) {</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>    sim_dat<span class="sc">$</span>y_sim[i,j] <span class="ot">=</span> sim_dat<span class="sc">$</span>pred[i,j] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="fl">0.1</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  }</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>}</span></code></pre></div>
 <div id="candidate-models" class="section level3">
 <h3>Candidate models</h3>
-<p>Next, we’ll fit a 2-trend DFA model to the simulated time series using the <code>fit_dfa()</code> function. This default model fixed the variances of the trends at 1 – and implicitly assumes that they have equal variance.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>f1 &lt;-<span class="st"> </span><span class="kw">fit_dfa</span>(</span>
-<span id="cb6-2"><a href="#cb6-2"></a>  <span class="dt">y =</span> sim_dat<span class="op">$</span>y_sim, <span class="dt">num_trends =</span> <span class="dv">2</span>, <span class="dt">scale=</span><span class="st">&quot;zscore&quot;</span>,</span>
-<span id="cb6-3"><a href="#cb6-3"></a>  <span class="dt">iter =</span> iter, <span class="dt">chains =</span> chains, <span class="dt">thin =</span> <span class="dv">1</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>)</span>
-<span id="cb6-5"><a href="#cb6-5"></a>r1 &lt;-<span class="st"> </span><span class="kw">rotate_trends</span>(f1)</span></code></pre></div>
-<p>Next, we’ll fit the model with process errors being estimated – and assume unequal variances by trend.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>f2 &lt;-<span class="st"> </span><span class="kw">fit_dfa</span>(</span>
-<span id="cb7-2"><a href="#cb7-2"></a>  <span class="dt">y =</span> sim_dat<span class="op">$</span>y_sim, <span class="dt">num_trends =</span> <span class="dv">2</span>, <span class="dt">scale=</span><span class="st">&quot;zscore&quot;</span>, <span class="dt">estimate_process_sigma =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb7-3"><a href="#cb7-3"></a>  <span class="dt">equal_process_sigma =</span> <span class="ot">FALSE</span>,</span>
-<span id="cb7-4"><a href="#cb7-4"></a>  <span class="dt">iter =</span> iter, <span class="dt">chains =</span> chains, <span class="dt">thin =</span> <span class="dv">1</span></span>
-<span id="cb7-5"><a href="#cb7-5"></a>)</span>
-<span id="cb7-6"><a href="#cb7-6"></a>r2 &lt;-<span class="st"> </span><span class="kw">rotate_trends</span>(f2)</span></code></pre></div>
-<p>Third, we’ll fit the model with process errors being estimated, unequal variances by trend, and not z-score the data (this is just a test of the scaling).</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>f3 &lt;-<span class="st"> </span><span class="kw">fit_dfa</span>(</span>
-<span id="cb8-2"><a href="#cb8-2"></a>  <span class="dt">y =</span> sim_dat<span class="op">$</span>y_sim, <span class="dt">num_trends =</span> <span class="dv">2</span>, <span class="dt">scale=</span><span class="st">&quot;center&quot;</span>, <span class="dt">estimate_process_sigma =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb8-3"><a href="#cb8-3"></a>  <span class="dt">equal_process_sigma =</span> <span class="ot">FALSE</span>,</span>
-<span id="cb8-4"><a href="#cb8-4"></a>  <span class="dt">iter =</span> iter, <span class="dt">chains =</span> chains, <span class="dt">thin =</span> <span class="dv">1</span></span>
-<span id="cb8-5"><a href="#cb8-5"></a>)</span>
-<span id="cb8-6"><a href="#cb8-6"></a>r3 &lt;-<span class="st"> </span><span class="kw">rotate_trends</span>(f3)</span></code></pre></div>
-<p>Our fourth and fifth models will be the same as # 2 and # 3, but will estimate a single variance for both trends.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>f4 &lt;-<span class="st"> </span><span class="kw">fit_dfa</span>(</span>
-<span id="cb9-2"><a href="#cb9-2"></a>  <span class="dt">y =</span> sim_dat<span class="op">$</span>y_sim, <span class="dt">num_trends =</span> <span class="dv">2</span>, <span class="dt">scale=</span><span class="st">&quot;zscore&quot;</span>, <span class="dt">estimate_process_sigma =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb9-3"><a href="#cb9-3"></a>  <span class="dt">equal_process_sigma =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb9-4"><a href="#cb9-4"></a>  <span class="dt">iter =</span> iter, <span class="dt">chains =</span> chains, <span class="dt">thin =</span> <span class="dv">1</span></span>
-<span id="cb9-5"><a href="#cb9-5"></a>)</span>
-<span id="cb9-6"><a href="#cb9-6"></a>r4 &lt;-<span class="st"> </span><span class="kw">rotate_trends</span>(f4)</span>
-<span id="cb9-7"><a href="#cb9-7"></a></span>
-<span id="cb9-8"><a href="#cb9-8"></a>f5 &lt;-<span class="st"> </span><span class="kw">fit_dfa</span>(</span>
-<span id="cb9-9"><a href="#cb9-9"></a>  <span class="dt">y =</span> sim_dat<span class="op">$</span>y_sim, <span class="dt">num_trends =</span> <span class="dv">2</span>, <span class="dt">scale=</span><span class="st">&quot;center&quot;</span>, <span class="dt">estimate_process_sigma =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb9-10"><a href="#cb9-10"></a>  <span class="dt">equal_process_sigma =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb9-11"><a href="#cb9-11"></a>  <span class="dt">iter =</span> iter, <span class="dt">chains =</span> chains, <span class="dt">thin =</span> <span class="dv">1</span></span>
-<span id="cb9-12"><a href="#cb9-12"></a>)</span>
-<span id="cb9-13"><a href="#cb9-13"></a>r5 &lt;-<span class="st"> </span><span class="kw">rotate_trends</span>(f5)</span></code></pre></div>
+<p>Next, we’ll fit a 2-trend DFA model to the simulated time series
+using the <code>fit_dfa()</code> function. This default model fixed the
+variances of the trends at 1 – and implicitly assumes that they have
+equal variance.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>f1 <span class="ot">&lt;-</span> <span class="fu">fit_dfa</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">y =</span> sim_dat<span class="sc">$</span>y_sim, <span class="at">num_trends =</span> <span class="dv">2</span>, <span class="at">scale=</span><span class="st">&quot;zscore&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">iter =</span> iter, <span class="at">chains =</span> chains, <span class="at">thin =</span> <span class="dv">1</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>)</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>r1 <span class="ot">&lt;-</span> <span class="fu">rotate_trends</span>(f1)</span></code></pre></div>
+<p>Next, we’ll fit the model with process errors being estimated – and
+assume unequal variances by trend.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>f2 <span class="ot">&lt;-</span> <span class="fu">fit_dfa</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">y =</span> sim_dat<span class="sc">$</span>y_sim, <span class="at">num_trends =</span> <span class="dv">2</span>, <span class="at">scale=</span><span class="st">&quot;zscore&quot;</span>, <span class="at">estimate_process_sigma =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">equal_process_sigma =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">iter =</span> iter, <span class="at">chains =</span> chains, <span class="at">thin =</span> <span class="dv">1</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>r2 <span class="ot">&lt;-</span> <span class="fu">rotate_trends</span>(f2)</span></code></pre></div>
+<p>Third, we’ll fit the model with process errors being estimated,
+unequal variances by trend, and not z-score the data (this is just a
+test of the scaling).</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>f3 <span class="ot">&lt;-</span> <span class="fu">fit_dfa</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">y =</span> sim_dat<span class="sc">$</span>y_sim, <span class="at">num_trends =</span> <span class="dv">2</span>, <span class="at">scale=</span><span class="st">&quot;center&quot;</span>, <span class="at">estimate_process_sigma =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">equal_process_sigma =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">iter =</span> iter, <span class="at">chains =</span> chains, <span class="at">thin =</span> <span class="dv">1</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>r3 <span class="ot">&lt;-</span> <span class="fu">rotate_trends</span>(f3)</span></code></pre></div>
+<p>Our fourth and fifth models will be the same as # 2 and # 3, but will
+estimate a single variance for both trends.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>f4 <span class="ot">&lt;-</span> <span class="fu">fit_dfa</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">y =</span> sim_dat<span class="sc">$</span>y_sim, <span class="at">num_trends =</span> <span class="dv">2</span>, <span class="at">scale=</span><span class="st">&quot;zscore&quot;</span>, <span class="at">estimate_process_sigma =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">equal_process_sigma =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">iter =</span> iter, <span class="at">chains =</span> chains, <span class="at">thin =</span> <span class="dv">1</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>r4 <span class="ot">&lt;-</span> <span class="fu">rotate_trends</span>(f4)</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>f5 <span class="ot">&lt;-</span> <span class="fu">fit_dfa</span>(</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="at">y =</span> sim_dat<span class="sc">$</span>y_sim, <span class="at">num_trends =</span> <span class="dv">2</span>, <span class="at">scale=</span><span class="st">&quot;center&quot;</span>, <span class="at">estimate_process_sigma =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  <span class="at">equal_process_sigma =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>  <span class="at">iter =</span> iter, <span class="at">chains =</span> chains, <span class="at">thin =</span> <span class="dv">1</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>)</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>r5 <span class="ot">&lt;-</span> <span class="fu">rotate_trends</span>(f5)</span></code></pre></div>
 </div>
 <div id="recovering-loadings" class="section level3">
 <h3>Recovering loadings</h3>
-<p>As a reminder, let’s look at the loadings from the original simulation model</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">print</span>(<span class="kw">round</span>(sim_dat<span class="op">$</span>Z,<span class="dv">2</span>))</span></code></pre></div>
+<p>As a reminder, let’s look at the loadings from the original
+simulation model</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(sim_dat<span class="sc">$</span>Z,<span class="dv">2</span>))</span></code></pre></div>
 <pre><code>##       [,1]  [,2]
 ## [1,]  0.57  0.00
 ## [2,] -0.14  0.33
 ## [3,]  1.18  1.06
 ## [4,] -1.52 -0.30</code></pre>
-<p>The estimated loadings from the DFA where the trends are forced to have the same fixed variance are good</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">print</span>(<span class="kw">round</span>(r1<span class="op">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
+<p>The estimated loadings from the DFA where the trends are forced to
+have the same fixed variance are good</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(r1<span class="sc">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
 <pre><code>##        [,1]    [,2]
 ## [1,] -91.70  -32.20
 ## [2,] -10.27 -109.07
 ## [3,]  42.34  -12.66
 ## [4,] -28.00   -7.90</code></pre>
-<p>but some of the loadings are far off. These loadings are also not well estimated for either of the models that estimate the process variances,</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">print</span>(<span class="kw">round</span>(r2<span class="op">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
+<p>but some of the loadings are far off. These loadings are also not
+well estimated for either of the models that estimate the process
+variances,</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(r2<span class="sc">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
 <pre><code>##        [,1]    [,2]
 ## [1,] -70.20   68.36
 ## [2,] -14.61 -118.64
 ## [3,] -66.64    9.32
 ## [4,] -47.34  -10.62</code></pre>
 <p>or</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">print</span>(<span class="kw">round</span>(r3<span class="op">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(r3<span class="sc">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
 <pre><code>##         [,1]   [,2]
 ## [1,]  -92.62  37.23
 ## [2,] -100.07 -64.45
 ## [3,]   -3.13 -44.88
 ## [4,]  -83.12 -29.19</code></pre>
 <p>The loadings for Model 4 are given by</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="kw">print</span>(<span class="kw">round</span>(r4<span class="op">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(r4<span class="sc">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
 <pre><code>##        [,1]   [,2]
 ## [1,] -99.51   5.65
 ## [2,]  -7.46 -98.49
 ## [3,]   8.32   2.71
 ## [4,]   1.16   0.06</code></pre>
 <p>and Model 5 by</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="kw">print</span>(<span class="kw">round</span>(r5<span class="op">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(r5<span class="sc">$</span>Z_rot_mean,<span class="dv">2</span>))</span></code></pre></div>
 <pre><code>##        [,1]    [,2]
 ## [1,] -89.54  -26.98
 ## [2,] -19.58 -107.16
 ## [3,]  44.17   66.35
 ## [4,] -47.99  -90.43</code></pre>
-<p>If we calculate the RMSE of the different models, model # 3 (estimated process trends, raw data not standardized) performs the best</p>
+<p>If we calculate the RMSE of the different models, model # 3
+(estimated process trends, raw data not standardized) performs the
+best</p>
 <table>
 <thead>
 <tr class="header">
@@ -525,11 +556,22 @@ Simulated data, from a model with 2 latent trends and no extremes.
 </tr>
 </tbody>
 </table>
-<p>These show that model 3 (trend variances are estimated, with data not standardized) performs best</p>
+<p>These show that model 3 (trend variances are estimated, with data not
+standardized) performs best</p>
 </div>
 <div id="summary" class="section level3">
 <h3>Summary</h3>
-<p>In this example, the estimation model that treated the variances of the random walks as parameters performed better than models that didn’t. A caveat is that we simulated the random walk variances to be an order of magnitude difference between the 2 trends, more similar trends would need additional simulations and more thorough validation studies. Similarly, we found that not standardizing the raw time series data (instead, just centering each time series) yielded estimates of the loadings and estimated trends that were more similar to those in the simulation model. Standardizing each time series a priori yields slightly worse estimates of the trends and loadings (comparing models 2 v 3 and 4 v 5).</p>
+<p>In this example, the estimation model that treated the variances of
+the random walks as parameters performed better than models that didn’t.
+A caveat is that we simulated the random walk variances to be an order
+of magnitude difference between the 2 trends, more similar trends would
+need additional simulations and more thorough validation studies.
+Similarly, we found that not standardizing the raw time series data
+(instead, just centering each time series) yielded estimates of the
+loadings and estimated trends that were more similar to those in the
+simulation model. Standardizing each time series a priori yields
+slightly worse estimates of the trends and loadings (comparing models 2
+v 3 and 4 v 5).</p>
 </div>
 </div>
 
