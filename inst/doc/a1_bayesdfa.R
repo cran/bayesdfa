@@ -180,6 +180,13 @@ df$weights <- (1 / df$se)^2
 f2 <- fit_dfa(
   y = df, num_trends = 2, scale="zscore",
   iter = 500, chains = 1, thin = 1,
-  weights = "weights", data_shape = "long"
+  inv_var_weights = "weights", data_shape = "long"
 )
+
+## ----eval=FALSE---------------------------------------------------------------
+#  f2 <- fit_dfa(
+#    y = df, num_trends = 2, scale="zscore",
+#    iter = 500, chains = 1, thin = 1,
+#    likelihood_weights = "weights", data_shape = "long"
+#  )
 
