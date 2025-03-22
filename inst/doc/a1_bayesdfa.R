@@ -72,11 +72,11 @@ loo1 <- loo(f1)
 loo1$estimates
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  m <- find_dfa_trends(
-#    y = s$y_sim, iter = iter,
-#    kmin = 1, kmax = 5, chains = chains, compare_normal = TRUE,
-#    variance = c("equal", "unequal")
-#  )
+# m <- find_dfa_trends(
+#   y = s$y_sim, iter = iter,
+#   kmin = 1, kmax = 5, chains = chains, compare_normal = TRUE,
+#   variance = c("equal", "unequal")
+# )
 
 ## ----simulate-data2-----------------------------------------------------------
 set.seed(1)
@@ -106,13 +106,13 @@ plot_trends(r) + theme_bw()
 plot_loadings(r) + theme_bw()
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  find_swans(r, plot = FALSE, threshold = 1 / 1000)
+# find_swans(r, plot = FALSE, threshold = 1 / 1000)
 
 ## ----summarize-nu-------------------------------------------------------------
 summary(rstan::extract(t2$model, "nu")[[1]])
 
 ## ----echo=TRUE, eval=FALSE----------------------------------------------------
-#  f <- fit_dfa(..., family = "poisson")
+# f <- fit_dfa(..., family = "poisson")
 
 ## ----echo=FALSE, results='asis'-----------------------------------------------
 m = cbind(c("gaussian","lognormal","gamma","binomial","poisson","nbinom2"), 
@@ -144,21 +144,21 @@ colnames(Z) = c("Trend 1", "Trend 2", "Trend 3")
 knitr::kable(Z)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  fit <- fit_dfa(..., estimate_trend_ar = TRUE)
+# fit <- fit_dfa(..., estimate_trend_ar = TRUE)
 
 ## ----eval = FALSE, warning=FALSE, message=FALSE, results='hide'---------------
-#  reg_mod <- fit_regimes(
-#    y = r$trends_mean[1, ],
-#    sds = (r$trends_upper - r$trends_mean)[1, ] / 1.96,
-#    n_regimes = 2,
-#    iter = 50, chains = 1
-#  )
+# reg_mod <- fit_regimes(
+#   y = r$trends_mean[1, ],
+#   sds = (r$trends_upper - r$trends_mean)[1, ] / 1.96,
+#   n_regimes = 2,
+#   iter = 50, chains = 1
+# )
 
 ## ----plot-regime, eval=FALSE, fig.align='center', fig.cap="Estimated regimes, from a HMM model applied to the first trend of a 2-trend DFA model with Student-t deviations.\\label{fig:plot-regime}"----
-#  plot_regime_model(reg_mod)
+# plot_regime_model(reg_mod)
 
 ## ----plot-regime-flipped, eval=FALSE, fig.align='center', fig.cap="Estimated regimes (after flipping), from a HMM model applied to the first trend of a 2-trend DFA model with Student-t deviations.\\label{fig:plot-regime-flipped}"----
-#  plot_regime_model(reg_mod, flip_regimes = TRUE)
+# plot_regime_model(reg_mod, flip_regimes = TRUE)
 
 ## -----------------------------------------------------------------------------
 set.seed(1)
@@ -184,9 +184,9 @@ f2 <- fit_dfa(
 )
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  f2 <- fit_dfa(
-#    y = df, num_trends = 2, scale="zscore",
-#    iter = 500, chains = 1, thin = 1,
-#    likelihood_weights = "weights", data_shape = "long"
-#  )
+# f2 <- fit_dfa(
+#   y = df, num_trends = 2, scale="zscore",
+#   iter = 500, chains = 1, thin = 1,
+#   likelihood_weights = "weights", data_shape = "long"
+# )
 

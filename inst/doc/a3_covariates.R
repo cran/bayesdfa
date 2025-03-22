@@ -41,8 +41,8 @@ plot_trends(rotate_trends(mod)) + ylab("Estimated trend") + theme_bw()
 cov = cov[which(cov$timeseries!=4),]
 
 ## ----eval=FALSE, results='hide', warning=FALSE, message=FALSE-----------------
-#  mod = fit_dfa(y = sim_dat$y, obs_covar = cov, num_trends = trends,
-#    chains=chains)
+# mod = fit_dfa(y = sim_dat$y, obs_covar = cov, num_trends = trends,
+#   chains=chains)
 
 ## ----simulate-data------------------------------------------------------------
 set.seed(1)
@@ -69,10 +69,10 @@ for(i in 2:length(cov)) {
 y = sim_dat$Z %*% x
 
 ## ----eval=FALSE, results='hide', warning=FALSE, message=FALSE-----------------
-#  pro_cov = expand.grid("trend"=1:2, "time"=1:20, "covariate"=1)
-#  pro_cov$value = cov[pro_cov$time]
-#  
-#  mod = fit_dfa(y = sim_dat$y, pro_covar = pro_cov, num_trends = 2,
-#    chains=chains, iter=iter)
-#  
+# pro_cov = expand.grid("trend"=1:2, "time"=1:20, "covariate"=1)
+# pro_cov$value = cov[pro_cov$time]
+# 
+# mod = fit_dfa(y = sim_dat$y, pro_covar = pro_cov, num_trends = 2,
+#   chains=chains, iter=iter)
+# 
 

@@ -20,7 +20,7 @@ s = sim_dfa(num_trends = 1, num_years = 1000, num_ts = 4,
 matplot(t(s$y_sim), type="l")
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  fit <- fit_dfa(..., estimation = "sampling")
+# fit <- fit_dfa(..., estimation = "sampling")
 
 ## -----------------------------------------------------------------------------
 set.seed(123)
@@ -40,9 +40,9 @@ m <- fit_dfa(y = s$y_sim, estimation = "optimizing")
 m$model$return_code
 
 ## ----message=FALSE, warning=FALSE, eval=FALSE---------------------------------
-#  m <- fit_dfa(y = s$y_sim, estimation = "vb", seed=123)
+# m <- fit_dfa(y = s$y_sim, estimation = "vb", seed=123)
 
 ## ----message=FALSE, warning=FALSE, eval=FALSE---------------------------------
-#  m <- fit_dfa(y = s$y_sim, estimation = "vb", seed=123, iter=20000,
-#               tol_rel_obj = 0.005, output_samples = 2000)
+# m <- fit_dfa(y = s$y_sim, estimation = "vb", seed=123, iter=20000,
+#              tol_rel_obj = 0.005, output_samples = 2000)
 

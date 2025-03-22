@@ -20,22 +20,22 @@ s = sim_dfa(num_trends = 1, num_years = 1000, num_ts = 4,
 matplot(t(s$y_sim), type="l")
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  set.seed(1)
-#  fit = fit_dfa(y = s$y_sim, num_trends = 1,
-#                trend_model = "bs", n_knots = 7)
+# set.seed(1)
+# fit = fit_dfa(y = s$y_sim, num_trends = 1,
+#               trend_model = "bs", n_knots = 7)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  set.seed(1)
-#  fit = fit_dfa(y = s$y_sim, num_trends = 1,
-#                trend_model = "bs", n_knots = 14)
+# set.seed(1)
+# fit = fit_dfa(y = s$y_sim, num_trends = 1,
+#               trend_model = "bs", n_knots = 14)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  set.seed(1)
-#  fit = fit_dfa(y = s$y_sim, num_trends = 1,
-#                trend_model = "ps", n_knots = 7)
+# set.seed(1)
+# fit = fit_dfa(y = s$y_sim, num_trends = 1,
+#               trend_model = "ps", n_knots = 7)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  set.seed(1)
-#  fit = fit_dfa(y = s$y_sim, num_trends = 1,
-#                trend_model = "gp", n_knots = 7)
+# set.seed(1)
+# fit = fit_dfa(y = s$y_sim, num_trends = 1,
+#               trend_model = "gp", n_knots = 7)
 
